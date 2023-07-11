@@ -29,11 +29,11 @@ public:
   preconditions(const WorldState &state) const noexcept = 0;
 
   virtual WorldState
-  apply_effects(const WorldState &state) const noexcept = 0;
+  simulate_effects(const WorldState &state) const noexcept = 0;
 
-  virtual bool execute(WorldState &state) const noexcept = 0;
+  virtual bool apply_effects(WorldState &state) const noexcept = 0;
   
-  virtual std::int32_t cost() const noexcept = 0;
+  virtual std::int32_t cost(const WorldState &state) const noexcept = 0;
 };
 
 template <typename WorldState, typename Goal>
@@ -90,8 +90,8 @@ public:
 
       for (auto &action : _actions) {
         if (action->preconditions(current->state)) {
-          WorldState next_state = action->apply_effects(current->state);
-          int32_t new_cost = current->cost + action->cost();
+          WorldState next_state = action->simulate_effects(current->state);
+          int32_t new_cost = current->cost + action->cost(current->state);
 
           if (!came_from.count(next_state) || new_cost < came_from[next_state]->cost) {
             std::shared_ptr<node> next_node = std::make_shared<node>(next_state, action, new_cost, next_state.heuristic(goal), current);

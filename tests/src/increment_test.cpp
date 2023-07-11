@@ -1,4 +1,4 @@
-#include <goap/goap.hpp> // assuming the above code is saved in this header file
+#include <goap/goap.hpp>
 #include <iostream>
 #include <string>
 #include <chrono>
@@ -52,17 +52,17 @@ public:
     return true;
   }
 
-  world_state apply_effects(const world_state &state) const noexcept {
+  world_state simulate_effects(const world_state &state) const noexcept {
     return world_state(state.value + amount);
   }
 
-  bool execute(world_state &state) const noexcept {
+  bool apply_effects(world_state &state) const noexcept {
     std::cout << "Increment\n";
     state.value += amount;
     return true;
   }
 
-  std::int32_t cost() const noexcept {
+  std::int32_t cost(const world_state &state) const noexcept {
     return amount * 2;
   }
 };
@@ -77,17 +77,17 @@ public:
     return true;
   }
 
-  world_state apply_effects(const world_state &state) const noexcept {
+  world_state simulate_effects(const world_state &state) const noexcept {
     return world_state(state.value - amount);
   }
 
-  bool execute(world_state &state) const noexcept {
+  bool apply_effects(world_state &state) const noexcept {
     std::cout << "Decrement\n";
     state.value -= amount;
     return true;
   }
 
-  std::int32_t cost() const noexcept {
+  std::int32_t cost(const world_state& state) const noexcept {
     return amount * 2;
   }
 };
@@ -102,7 +102,7 @@ int main() {
 
   const auto plan = planner.plan(state, g);
   for (const auto &action : plan) {
-    action->execute(state);
+    action->apply_effects(state);
   }
 
   std::cout << "Final state: " << state.value << std::endl;
