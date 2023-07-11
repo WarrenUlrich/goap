@@ -5,12 +5,12 @@ project(goap VERSION 1.0)
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED True)
 
-include_directories(
-    ${CMAKE_SOURCE_DIR}/include
-)
-
 add_library(
     goap INTERFACE
+)
+
+target_include_directories(
+    goap INTERFACE include
 )
 
 enable_testing()
