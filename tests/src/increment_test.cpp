@@ -3,15 +3,19 @@
 #include <string>
 #include <chrono>
 
-class goal;
-
 class world_state {
 public:
   int value;
 
   world_state(int value) : value(value) {}
 
-  int heuristic(const goal &g) const noexcept;
+  bool satisfied(const world_state &other) const noexcept {
+    return value == other.value;
+  }
+
+  std::int32_t heuristic(const world_state &other) const noexcept {
+    return std::abs(value - other.value);
+  }
 
   bool operator==(const world_state &other) const noexcept {
     return value == other.value;
@@ -27,22 +31,7 @@ namespace std {
   };
 }
 
-class goal {
-public:
-  int value;
-
-  goal(int value) : value(value) {}
-
-  bool satisfied(const world_state &state) const noexcept {
-    return state.value == value;
-  }
-};
-
-int world_state::heuristic(const goal &g) const noexcept {
-  return g.value - value;
-}
-
-class increment_action : public goap::action<world_state> {
+class increment_action : public goap::base_action<world_state> {
 public:
   int amount;
 
@@ -52,22 +41,27 @@ public:
     return true;
   }
 
-  world_state simulate_effects(const world_state &state) const noexcept {
-    return world_state(state.value + amount);
+  world_state apply_effects(const world_state &state) const noexcept {
+    world_state new_state = state;
+    _effect(new_state);
+    return new_state;
   }
 
-  bool apply_effects(world_state &state) const noexcept {
-    std::cout << "Increment\n";
-    state.value += amount;
-    return true;
+  void execute(world_state &state) const noexcept {
+    _effect(state);
   }
 
   std::int32_t cost(const world_state &state) const noexcept {
-    return amount * 2;
+    return std::abs(amount) * 2;
+  }
+
+private:
+  void _effect(world_state &state) const noexcept {
+    state.value += amount;
   }
 };
 
-class decrement_action : public goap::action<world_state> {
+class decrement_action : public goap::base_action<world_state> {
 public:
   int amount;
 
@@ -77,32 +71,26 @@ public:
     return true;
   }
 
-  world_state simulate_effects(const world_state &state) const noexcept {
+  world_state apply_effects(const world_state &state) const noexcept {
     return world_state(state.value - amount);
   }
 
-  bool apply_effects(world_state &state) const noexcept {
-    std::cout << "Decrement\n";
-    state.value -= amount;
-    return true;
-  }
-
   std::int32_t cost(const world_state& state) const noexcept {
-    return amount * 2;
+    return 1;
   }
 };
 
 int main() {
   world_state state(-1);
-  goal g(100);
+  world_state goal(100);
 
-  goap::planner<world_state, goal> planner;
+  goap::planner<world_state, world_state, increment_action> planner;
   planner.add_action(std::make_shared<increment_action>(10));
-  planner.add_action(std::make_shared<decrement_action>(1));
+  planner.add_action(std::make_shared<increment_action>(-1));
 
-  const auto plan = planner.plan(state, g);
+  const auto plan = planner.plan(state, goal);
   for (const auto &action : plan) {
-    action->apply_effects(state);
+    action->execute(state);
   }
 
   std::cout << "Final state: " << state.value << std::endl;
