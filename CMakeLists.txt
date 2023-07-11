@@ -10,8 +10,7 @@ include_directories(
 )
 
 add_library(
-    goap STATIC
-    src/goap.cpp
+    goap INTERFACE
 )
 
 enable_testing()
