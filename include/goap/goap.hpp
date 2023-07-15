@@ -3,6 +3,7 @@
 #include <algorithm>
 #include <concepts>
 #include <cstdint>
+#include <limits>
 #include <memory>
 #include <optional>
 #include <queue>
@@ -41,6 +42,8 @@ public:
 
   virtual std::int32_t
   cost(const WorldState &state) const noexcept = 0;
+
+  virtual ~base_action() = default;
 };
 
 template <world_state WorldState, goal<WorldState> Goal,
@@ -49,8 +52,13 @@ template <world_state WorldState, goal<WorldState> Goal,
 class planner {
 public:
   using world_state_type = WorldState;
+
   using goal_type = Goal;
+
   using action_type = Action;
+
+  using plans_type =
+      std::deque<std::shared_ptr<action_type>>;
 
   struct node {
     world_state_type state;
@@ -78,9 +86,8 @@ public:
 
   constexpr planner() noexcept = default;
 
-  std::vector<std::shared_ptr<action_type>>
-  plan(const WorldState &start,
-       const Goal &goal) const noexcept {
+  plans_type plan(const WorldState &start,
+                  const Goal &goal) const noexcept {
     std::priority_queue<std::shared_ptr<node>,
                         std::vector<std::shared_ptr<node>>,
                         compare>
@@ -99,16 +106,16 @@ public:
       frontier.pop();
 
       if (goal.satisfied(current->state)) {
-        std::vector<std::shared_ptr<action_type>> result;
+        plans_type result;
         while (current->parent != nullptr) {
-          result.push_back(current->action_taken);
+          result.push_front(current->action_taken);
           current = current->parent;
         }
-        std::reverse(result.begin(), result.end());
+
         return result;
       }
 
-      for (auto &action : _actions) {
+      for (const auto &action : _actions) {
         if (action->preconditions(current->state)) {
           WorldState next_state =
               action->apply_effects(current->state);
